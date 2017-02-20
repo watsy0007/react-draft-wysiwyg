@@ -11,6 +11,9 @@ import emoji from './Emoji';
 import image from './Image';
 import remove from './Remove';
 import history from './History';
+import video from './Video';
+import line from './Line';
+import linkList from './LinkList';
 
 module.exports = {
   inline,
@@ -26,4 +29,7 @@ module.exports = {
   image,
   remove,
   history,
-}
+  video,
+  line,
+  linkList,
+};

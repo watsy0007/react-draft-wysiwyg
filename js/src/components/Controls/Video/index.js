@@ -4,9 +4,9 @@ import React, { Component, PropTypes } from 'react';
 import { Entity, AtomicBlockUtils } from 'draft-js';
 import classNames from 'classnames';
 import Option from '../../Option';
-import styles from './styles.css'; // eslint-disable-line no-unused-vars
+import styles from '../Embedded/styles.css'; // eslint-disable-line no-unused-vars
 
-export default class Embedded extends Component {
+export default class Video extends Component {
 
   static propTypes: Object = {
     editorState: PropTypes.object.isRequired,
@@ -49,18 +49,8 @@ export default class Embedded extends Component {
   };
 
   updateEmbeddedLink: Function = (event: Object): void => {
-    let value = event.target.value;
-    // if value is something likes "<iframe height=498 width=510 src='http://player.youku.com/embed/XMjQ4NDkxMTI5Mg==' frameborder=0 'allowfullscreen'></iframe>", then we will extract src;
-    if (/^<iframe/.test(value)) {
-      const elem = document.createElement('div');
-      elem.innerHTML = value;
-
-      const iframes = elem.getElementsByTagName('iframe');
-
-      value = iframes[0].src;
-    }
     this.setState({
-      embeddedLink: value,
+      embeddedLink: event.target.value,
     });
   };
 
@@ -81,7 +71,7 @@ export default class Embedded extends Component {
     const { embeddedLink, height, width } = this.state;
     const entityKey = editorState
       .getCurrentContent()
-      .createEntity('EMBEDDED_LINK', 'MUTABLE', { src: embeddedLink, height, width })
+      .createEntity('VIDEO', 'MUTABLE', { src: embeddedLink, height, width })
       .getLastCreatedEntityKey();
     const newEditorState = AtomicBlockUtils.insertAtomicBlock(
       editorState,
@@ -122,7 +112,7 @@ export default class Embedded extends Component {
       >
         <div className="rdw-embedded-modal-header">
           <span className="rdw-embedded-modal-header-option">
-            <span>Embedded Link</span>
+            <span>Video SRC</span>
             <span className="rdw-embedded-modal-header-label" />
           </span>
         </div>

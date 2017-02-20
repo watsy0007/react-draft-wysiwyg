@@ -23,13 +23,16 @@ import undo from '../../../images/undo.svg';
 import redo from '../../../images/redo.svg';
 import subscript from '../../../images/subscript.svg';
 import superscript from '../../../images/superscript.svg';
+import video from '../../../images/video.svg';
+import line from '../../../images/line.svg';
+import linkList from '../../../images/link-list.svg';
 
 /**
 * This is default toolbar configuration,
 * whatever user passes in toolbar property is deeply merged with this to over-ride defaults.
 */
 export default {
-  options: ['inline', 'blockType', 'fontSize', 'fontFamily', 'list', 'textAlign', 'colorPicker', 'link', 'embedded', 'emoji', 'image', 'remove', 'history'],
+  options: ['inline', 'blockType', 'fontSize', 'fontFamily', 'list', 'textAlign', 'colorPicker', 'link', 'linkList', 'embedded', 'emoji', 'image', 'video', 'line', 'remove', 'history'],
   inline: {
     inDropdown: false,
     className: undefined,
@@ -97,6 +100,12 @@ export default {
     link: { icon: link, className: undefined },
     unlink: { icon: unlink, className: undefined },
   },
+  linkList: {
+    icon: linkList,
+    className: undefined,
+    popupClassName: undefined,
+    allLinks: [],
+  },
   emoji: {
     icon: emoji,
     className: undefined,
@@ -124,6 +133,16 @@ export default {
     uploadEnabled: true,
     alignmentEnabled: true,
     uploadCallback: undefined,
+  },
+  video: {
+    icon: video,
+    className: undefined,
+    popupClassName: undefined,
+  },
+  line: {
+    icon: line,
+    className: undefined,
+    popupClassName: undefined,
   },
   remove: { icon: eraser, className: undefined },
   history: {

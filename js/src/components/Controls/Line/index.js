@@ -4,9 +4,10 @@ import React, { Component, PropTypes } from 'react';
 import { Entity, AtomicBlockUtils } from 'draft-js';
 import classNames from 'classnames';
 import Option from '../../Option';
-import styles from './styles.css'; // eslint-disable-line no-unused-vars
+import styles from '../Embedded/styles.css'; // eslint-disable-line no-unused-vars
+import { Dropdown, DropdownOption } from '../../Dropdown';
 
-export default class Embedded extends Component {
+export default class Line extends Component {
 
   static propTypes: Object = {
     editorState: PropTypes.object.isRequired,
@@ -16,9 +17,9 @@ export default class Embedded extends Component {
   };
 
   state: Object = {
+    lineType: 'solid',
     embeddedLink: '',
     showModal: false,
-    height: 'auto',
     width: '100%',
   };
 
@@ -33,15 +34,13 @@ export default class Embedded extends Component {
   }
 
   onOptionClick: Function = (): void => {
-    this.signalShowModal = !this.state.showModal;
+    // this.signalShowModal = !this.state.showModal;
+    // this.signalShowModal = true;
+    this.setState({ showModal: true });
   }
 
   setURLInputReference: Function = (ref: Object): void => {
     this.urlInput = ref;
-  };
-
-  setHeightInputReference: Function = (ref: Object): void => {
-    this.heightInput = ref;
   };
 
   setWidthInputReference: Function = (ref: Object): void => {
@@ -49,24 +48,8 @@ export default class Embedded extends Component {
   };
 
   updateEmbeddedLink: Function = (event: Object): void => {
-    let value = event.target.value;
-    // if value is something likes "<iframe height=498 width=510 src='http://player.youku.com/embed/XMjQ4NDkxMTI5Mg==' frameborder=0 'allowfullscreen'></iframe>", then we will extract src;
-    if (/^<iframe/.test(value)) {
-      const elem = document.createElement('div');
-      elem.innerHTML = value;
-
-      const iframes = elem.getElementsByTagName('iframe');
-
-      value = iframes[0].src;
-    }
     this.setState({
-      embeddedLink: value,
-    });
-  };
-
-  updateHeight: Function = (event: Object): void => {
-    this.setState({
-      height: event.target.value,
+      embeddedLink: event.target.value,
     });
   };
 
@@ -76,12 +59,12 @@ export default class Embedded extends Component {
     });
   };
 
-  addEmbeddedLink: Function = (): void => {
+  addLine: Function = (): void => {
     const { editorState, onChange } = this.props;
-    const { embeddedLink, height, width } = this.state;
+    const { lineType, width } = this.state;
     const entityKey = editorState
       .getCurrentContent()
-      .createEntity('EMBEDDED_LINK', 'MUTABLE', { src: embeddedLink, height, width })
+      .createEntity('LINE', 'MUTABLE', { type: lineType, width })
       .getLastCreatedEntityKey();
     const newEditorState = AtomicBlockUtils.insertAtomicBlock(
       editorState,
@@ -93,11 +76,11 @@ export default class Embedded extends Component {
   };
 
   showHideModal: Function = (): void => {
-    this.setState({
-      showModal: this.signalShowModal,
-      embeddedLink: undefined,
-    });
-    this.signalShowModal = false;
+    // this.setState({
+    //   showModal: this.signalShowModal,
+    //   embeddedLink: undefined,
+    // });
+    // this.signalShowModal = false;
   }
 
   closeModal: Function = (): void => {
@@ -108,42 +91,44 @@ export default class Embedded extends Component {
   };
 
   stopPropagation: Function = (event: Object): void => {
-    event.preventDefault();
-    event.stopPropagation();
+    // event.preventDefault();
+    // event.stopPropagation();
   };
 
+  handleChangeLineType: Function = (value: String): void => {
+    this.setState({ lineType: value });
+  }
+
   rendeEmbeddedLinkModal(): Object {
-    const { embeddedLink, height, width } = this.state;
-    const { config: { popupClassName } } = this.props;
+    const { lineType, width } = this.state;
+    const { config: { popupClassName }} = this.props;
     return (
       <div
         className={classNames('rdw-embedded-modal', popupClassName)}
         onClick={this.stopPropagation}
       >
-        <div className="rdw-embedded-modal-header">
-          <span className="rdw-embedded-modal-header-option">
-            <span>Embedded Link</span>
-            <span className="rdw-embedded-modal-header-label" />
-          </span>
-        </div>
         <div className="rdw-embedded-modal-link-section">
-          <input
-            ref={this.setURLInputReference}
-            className="rdw-embedded-modal-link-input"
-            placeholder="Enter link"
-            onChange={this.updateEmbeddedLink}
-            onBlur={this.updateEmbeddedLink}
-            value={embeddedLink}
-          />
+          <Dropdown
+            className={classNames('rdw-fontfamily-dropdown')}
+            onChange={this.handleChangeLineType}
+            modalHandler={this.props.modalHandler}
+            optionWrapperClassName={classNames('rdw-fontfamily-optionwrapper')}
+          >
+            <span className="rdw-fontfamily-placeholder">
+              {lineType || 'Font Family'}
+            </span>
+            {
+              ['solid', 'dashed'].map((type, index) =>
+                <DropdownOption
+                  active={lineType === type}
+                  value={type}
+                  key={index}
+                >
+                  {type}
+                </DropdownOption>)
+            }
+          </Dropdown>
           <div className="rdw-embedded-modal-size">
-            <input
-              ref={this.setHeightInputReference}
-              onChange={this.updateHeight}
-              onBlur={this.updateHeight}
-              value={height}
-              className="rdw-embedded-modal-size-input"
-              placeholder="Height"
-            />
             <input
               ref={this.setWidthInputReference}
               onChange={this.updateWidth}
@@ -157,8 +142,8 @@ export default class Embedded extends Component {
         <span className="rdw-embedded-modal-btn-section">
           <button
             className="rdw-embedded-modal-btn"
-            onClick={this.addEmbeddedLink}
-            disabled={!embeddedLink || !height || !width}
+            onClick={this.addLine}
+            disabled={!lineType || !width}
           >
             Add
           </button>
