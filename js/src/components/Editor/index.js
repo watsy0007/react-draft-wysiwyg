@@ -1,6 +1,7 @@
 /* @flow */
 
-import React, { Component, PropTypes } from 'react';
+import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 import {
   Editor,
   EditorState,
@@ -11,26 +12,26 @@ import {
 } from 'draft-js';
 import {
   changeDepth,
-  setColors,
-  setFontSizes,
   handleNewLine,
-  setFontFamilies,
   getCustomStyleMap,
+  extractInlineStyle,
+  getSelectedBlocksType,
 } from 'draftjs-utils';
 import classNames from 'classnames';
 import ModalHandler from '../../event-handler/modals';
 import FocusHandler from '../../event-handler/focus';
 import KeyDownHandler from '../../event-handler/keyDown';
 import SuggestionHandler from '../../event-handler/suggestions';
-import blockStyleFn from '../../utils/BlockStyle';
+import blockStyleFn from '../../Utils/BlockStyle';
 import { mergeRecursive } from '../../utils/toolbar';
 import { hasProperty, filter } from '../../utils/common';
 import Controls from '../Controls';
-import LinkDecorator from '../../decorators/Link';
+import getLinkDecorator from '../../Decorators/Link';
 import getMentionDecorators from '../../decorators/Mention';
-import getHashtagDecorator from '../../decorators/Hashtag';
+import getHashtagDecorator from '../../decorators/HashTag';
 import getBlockRenderFunc from '../../renderer';
 import defaultToolbar from '../../config/defaultToolbar';
+import localeTranslations from '../../i18n';
 import './styles.css';
 import '../../../../css/Draft.css';
 
@@ -52,6 +53,9 @@ export default class WysiwygEditor extends Component {
     toolbar: PropTypes.object,
     toolbarCustomButtons: PropTypes.array,
     toolbarClassName: PropTypes.string,
+    toolbarHidden: PropTypes.bool,
+    locale: PropTypes.string,
+    localization: PropTypes.object,
     editorClassName: PropTypes.string,
     wrapperClassName: PropTypes.string,
     toolbarStyle: PropTypes.object,
@@ -75,19 +79,20 @@ export default class WysiwygEditor extends Component {
     ariaExpanded: PropTypes.string,
     ariaHasPopup: PropTypes.string,
     customBlockRenderFunc: PropTypes.func,
+    customDecorators: PropTypes.array,
   };
 
   static defaultProps = {
     toolbarOnFocus: false,
+    toolbarHidden: false,
     stripPastedStyles: false,
+    localization: { locale: 'en', translations: {} },
+    customDecorators: [],
   }
 
   constructor(props) {
     super(props);
     const toolbar = mergeRecursive(defaultToolbar, props.toolbar);
-    setFontFamilies(toolbar.fontFamily && toolbar.fontFamily.options);
-    setFontSizes(toolbar.fontSize && toolbar.fontSize.options);
-    setColors(toolbar.colorPicker && toolbar.colorPicker.colors);
     this.state = {
       editorState: undefined,
       editorFocused: false,
@@ -99,7 +104,9 @@ export default class WysiwygEditor extends Component {
     this.blockRendererFn = getBlockRenderFunc({
       isReadOnly: this.isReadOnly,
       isImageAlignmentEnabled: this.isImageAlignmentEnabled,
-    }, props.customBlockRenderFunc, this.getEditorState);
+      getEditorState: this.getEditorState,
+      onChange: this.onChange,
+    }, props.customBlockRenderFunc);
     this.editorProps = this.filterEditorProps(props);
     this.customStyleMap = getCustomStyleMap();
   }
@@ -107,6 +114,7 @@ export default class WysiwygEditor extends Component {
   componentWillMount(): void {
     this.compositeDecorator = this.getCompositeDecorator();
     const editorState = this.createEditorState(this.compositeDecorator);
+    extractInlineStyle(editorState);
     this.setState({
       editorState,
     });
@@ -121,9 +129,6 @@ export default class WysiwygEditor extends Component {
     const newState = {};
     if (this.props.toolbar !== props.toolbar) {
       const toolbar = mergeRecursive(defaultToolbar, props.toolbar);
-      setFontFamilies(toolbar.fontFamily && toolbar.fontFamily.options);
-      setFontSizes(toolbar.fontSize && toolbar.fontSize.options);
-      setColors(toolbar.colorPicker && toolbar.colorPicker.colors);
       newState.toolbar = toolbar;
     }
     if (hasProperty(props, 'editorState') && this.props.editorState !== props.editorState) {
@@ -144,6 +149,11 @@ export default class WysiwygEditor extends Component {
       } else {
         newState.editorState = EditorState.createEmpty(this.compositeDecorator);
       }
+    }
+    if (newState.editorState &&
+      (this.props.editorState && this.props.editorState.getCurrentContent().getBlockMap().size) !==
+      (newState.editorState && newState.editorState.getCurrentContent().getBlockMap().size)) {
+      extractInlineStyle(newState.editorState);
     }
     this.setState(newState);
     this.editorProps = this.filterEditorProps(props);
@@ -203,7 +213,9 @@ export default class WysiwygEditor extends Component {
 
   onChange: Function = (editorState: Object): void => {
     const { readOnly, onEditorStateChange } = this.props;
-    if (!readOnly) {
+    if (!readOnly &&
+      !(getSelectedBlocksType(editorState) === 'atomic' &&
+      editorState.getSelection().isCollapsed)) {
       if (onEditorStateChange) {
         onEditorStateChange(editorState);
       }
@@ -235,8 +247,10 @@ export default class WysiwygEditor extends Component {
     this.editor = ref;
   };
 
-  getCompositeDecorator = ():void => {
-    const decorators = [LinkDecorator];
+  getCompositeDecorator = (): void => {
+    let decorators = [...this.props.customDecorators, getLinkDecorator({
+      showOpenOptionOnHover: this.state.toolbar.link.showOpenOptionOnHover,
+    })];
     if (this.props.mention) {
       decorators.push(...getMentionDecorators({
         ...this.props.mention,
@@ -262,8 +276,6 @@ export default class WysiwygEditor extends Component {
   isReadOnly = () => this.props.readOnly;
 
   isImageAlignmentEnabled = () => this.state.toolbar.image.alignmentEnabled;
-
-  getShowOpenOptionOnHover = () => this.state.toolbar.link.showOpenOptionOnHover;
 
   createEditorState = (compositeDecorator) => {
     let editorState;
@@ -302,10 +314,11 @@ export default class WysiwygEditor extends Component {
   filterEditorProps = (props) => {
     return filter(props, [
       'onChange', 'onEditorStateChange', 'onContentStateChange', 'initialContentState',
-      'defaultContentState', 'contentState', 'editorState', 'defaultEditorState', 'toolbarOnFocus',
-      'toolbar', 'toolbarCustomButtons', 'toolbarClassName', 'editorClassName',
-      'wrapperClassName', 'toolbarStyle', 'editorStyle', 'wrapperStyle', 'uploadCallback',
-      'onFocus', 'onBlur', 'onTab', 'mention', 'hashtag', 'ariaLabel', 'customBlockRenderFunc',
+      'defaultContentState', 'contentState', 'editorState', 'defaultEditorState', 'locale',
+      'localization', 'toolbarOnFocus', 'toolbar', 'toolbarCustomButtons', 'toolbarClassName',
+      'editorClassName', 'toolbarHidden', 'wrapperClassName', 'toolbarStyle', 'editorStyle',
+      'wrapperStyle', 'uploadCallback', 'onFocus', 'onBlur', 'onTab', 'mention', 'hashtag',
+      'ariaLabel', 'customBlockRenderFunc', 'customDecorators',
     ]);
   }
 
@@ -360,9 +373,12 @@ export default class WysiwygEditor extends Component {
       toolbar,
      } = this.state;
     const {
+      locale,
+      localization: { locale: newLocale, translations },
       toolbarCustomButtons,
       toolbarOnFocus,
       toolbarClassName,
+      toolbarHidden,
       editorClassName,
       wrapperClassName,
       toolbarStyle,
@@ -377,6 +393,7 @@ export default class WysiwygEditor extends Component {
       modalHandler: this.modalHandler,
       editorState,
       onChange: this.onChange,
+      translations: { ...localeTranslations[locale || newLocale], ...translations },
     }
 
     return (
@@ -388,7 +405,9 @@ export default class WysiwygEditor extends Component {
         onBlur={this.onWrapperBlur}
         aria-label="rdw-wrapper"
       >
-        {(editorFocused || this.focusHandler.isInputFocused() || !toolbarOnFocus) &&
+        {
+          !toolbarHidden &&
+          (editorFocused || this.focusHandler.isInputFocused() || !toolbarOnFocus) &&
           <div
             className={classNames('rdw-editor-toolbar', toolbarClassName)}
             style={toolbarStyle}
@@ -427,7 +446,7 @@ export default class WysiwygEditor extends Component {
             editorState={editorState}
             onChange={this.onChange}
             blockStyleFn={blockStyleFn}
-            customStyleMap={this.customStyleMap}
+            customStyleMap={getCustomStyleMap()}
             handleReturn={this.handleReturn}
             blockRendererFn={this.blockRendererFn}
             handleKeyCommand={this.handleKeyCommand}

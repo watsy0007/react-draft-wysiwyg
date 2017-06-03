@@ -1,6 +1,7 @@
 /* @flow */
 
-import React, { Component, PropTypes } from 'react';
+import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import styles from './styles.css'; // eslint-disable-line no-unused-vars
 
@@ -20,6 +21,7 @@ export default class DropDownOption extends Component {
     activeClassName: PropTypes.string,
     disabledClassName: PropTypes.string,
     highlightedClassName: PropTypes.string,
+    title: PropTypes.string,
   };
 
   onClick: Function = (event): void => {
@@ -55,6 +57,7 @@ export default class DropDownOption extends Component {
       activeClassName,
       disabledClassName,
       highlightedClassName,
+      title,
      } = this.props;
     return (
       <li
@@ -70,6 +73,7 @@ export default class DropDownOption extends Component {
         onMouseLeave={this.resetHighlighted}
         onClick={this.onClick}
         aria-selected={active}
+        title={title}
       >
         {children}
       </li>

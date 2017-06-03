@@ -1,4 +1,5 @@
-import React, { PropTypes, Component } from 'react';
+import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import addMention from '../addMention';
 import KeyDownHandler from '../../../event-handler/keyDown';
@@ -44,7 +45,7 @@ class Suggestion {
           0,
           selection.get('focusOffset') === text.length - 1
           ? text.length
-          : selection.get('focusOffset') + 1
+          : selection.get('focusOffset') + 1,
         );
         let index = text.lastIndexOf(separator + trigger);
         let preText = separator + trigger;
@@ -59,10 +60,11 @@ class Suggestion {
             if (suggestion.value) {
               if (this.config.caseSensitive) {
                 return suggestion.value.indexOf(mentionText) >= 0;
-              } else {
-                return suggestion.value.toLowerCase().indexOf(mentionText && mentionText.toLowerCase()) >= 0;
               }
+              return suggestion.value.toLowerCase()
+                .indexOf(mentionText && mentionText.toLowerCase()) >= 0;
             }
+            return false;
           });
           if (suggestionPresent) {
             callback(index === 0 ? 0 : index + 1, text.length);
@@ -78,7 +80,7 @@ class Suggestion {
     return {
       strategy: this.findSuggestionEntities,
       component: this.getSuggestionComponent(),
-    }
+    };
   };
 }
 

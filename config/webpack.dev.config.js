@@ -5,10 +5,9 @@ const precss = require('precss');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const webpack = require('webpack');
 
-module.exports = {
+const devConfigs = {
   devtool: 'source-map',
   entry: [
-    'webpack-hot-middleware/client',
     './js/playground/index',
   ],
   output: {
@@ -49,12 +48,7 @@ module.exports = {
         postcss: [autoprefixer, precss],
       }
     })
-  ],
-  resolve: {
-    // alias: {
-    //   'draftjs-to-html': path.join(__dirname, '../../draftjs-to-html', 'js'),
-    //   'draftjs-to-markdown': path.join(__dirname, '../../draftjs-to-markdown', 'js'),
-    // },
-    extensions: ['.js', '.json'],
-  },
-};
+  ]
+}
+
+module.exports = devConfigs;
